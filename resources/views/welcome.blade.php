@@ -7,6 +7,6 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>Hello World, Welcome to laravel</h1>
+    <h1>Hello Laravel cloud</h1>
 </body>
 </html>
