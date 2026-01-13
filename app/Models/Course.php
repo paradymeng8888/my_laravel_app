@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Course extends Model
+{
+    protected $table = 'courses';
+
+    public $timestamps = true; // 👈 ADD THIS
+
+    protected $fillable = [
+        'name',
+    ];
+}
