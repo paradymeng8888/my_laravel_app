@@ -8,42 +8,39 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
 
+
     public function register(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
-                'password' => 'required|string|min:4',
-            ]);
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:4',
+        ]);
 
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-            ]);
-
-            return response()->json([
-                'message' => 'User registered successfully',
-                'user' => $user,
-            ], 201);
-
-        } catch (ValidationException $e) {
+        if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors(),
+                'errors' => $validator->errors(),
             ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Registration failed',
-                'error' => $e->getMessage(),
-            ], 500);
         }
+
+        $user = User::create([
+            'name' => $validator->validated()['name'],
+            'email' => $validator->validated()['email'],
+            'password' => Hash::make($validator->validated()['password']),
+        ]);
+
+        return response()->json([
+            'message' => 'User registered successfully',
+            'user' => $user,
+        ], 201);
     }
+
 
     public function login(Request $request)
     {
