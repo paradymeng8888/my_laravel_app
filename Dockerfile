@@ -1,34 +1,30 @@
 FROM php:8.4-cli
 
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y \
     git \
-    zip \
     unzip \
     curl \
     libzip-dev \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl
+    && docker-php-ext-install \
+        pdo_mysql \
+        mysqli \
+        mbstring \
+        zip \
+        exif \
+        pcntl
 
-# Install Composer 
+# Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /app
 
-# Copy project files
-COPY . /app
-
-# Install Laravel dependencies
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
-
-# Set permission for Laravel storage
-RUN chmod -R 777 storage bootstrap/cache
-
 # Expose Laravel port
 EXPOSE 8000
 
-# Run Laravel
+# Default command (handled by docker-compose)
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
