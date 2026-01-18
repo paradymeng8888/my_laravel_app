@@ -7,41 +7,46 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-
-
+    /**
+     * ✅ REGISTER (Sanctum – Cloud safe)
+     */
     public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:4',
-        ]);
+        try {
+            // ✅ Validation (Laravel native, auto JSON)
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:4',
+            ]);
 
-        if ($validator->fails()) {
+            // ✅ Create user
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+            ]);
+
             return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-            ], 422);
+                'message' => 'User registered successfully',
+                'user' => $user,
+            ], 201);
+
+        } catch (\Throwable $e) {
+            // 🔥 This prevents silent 500 on Cloud
+            return response()->json([
+                'message' => 'Register failed',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $user = User::create([
-            'name' => $validator->validated()['name'],
-            'email' => $validator->validated()['email'],
-            'password' => Hash::make($validator->validated()['password']),
-        ]);
-
-        return response()->json([
-            'message' => 'User registered successfully',
-            'user' => $user,
-        ], 201);
     }
 
-
+    /**
+     * ✅ LOGIN (Sanctum)
+     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -49,14 +54,15 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if(!Auth::attempt($credentials)){
+        if (!Auth::attempt($credentials)) {
             return response()->json([
                 'message' => 'Invalid login details',
             ], 401);
         }
 
-        $user = Auth::user(); //get user from database
-        $token = $user->createToken('auth_token')->plainTextToken; //create token
+        $user = $request->user();
+
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'message' => 'Login successful',
@@ -65,16 +71,18 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * ✅ LOGOUT (Sanctum)
+     */
     public function logout(Request $request)
     {
         try {
-            $user = Auth::user();//get current user request
-            $user->tokens()->delete();//delete all tokens of the users
+            $request->user()->tokens()->delete();
 
             return response()->json([
                 'message' => 'Logged out successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Logout failed',
                 'error' => $e->getMessage(),
